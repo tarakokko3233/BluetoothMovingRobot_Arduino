@@ -10,7 +10,7 @@ OLLO myOLLO;
 
 
 // IRセンサーの閾値
-#define IR_THRESHOLD 50
+#define IR_THRESHOLD 60
 
 DynamixelWorkbench dxl_wb;
 
@@ -90,69 +90,70 @@ void loop() {
   } else {
     moveForward();
   }
-  // シリアルポートにデータがあるか確認
-  if (Serial3.available()) {
-    // データを読み取り、変数に格納
-    char receivedChar = Serial3.read();
-    
-    // 受信したデータを処理（例：シリアルモニタに表示）
-    Serial.println(receivedChar);
-  }
-  Serial.print(leftIRValue);
-  Serial.print(",");
-  Serial.println(rightIRValue);
-  Serial3.print("Left IR: ");
   Serial3.print(leftIRValue);
-  Serial3.print(", Right IR: ");
+  Serial3.print(",");
   Serial3.println(rightIRValue);
-
 
   delay(500);
 }
-
-unsigned long turnLeft(unsigned long duration = 0) {
+// turnLeft: 左に曲がる関数
+unsigned long turnLeft(bool reverse = false, unsigned long duration = 0) {
   unsigned long startTime = millis();
+  
+  if (!reverse) {
+    while (myOLLO.read(1, IR_SENSOR) > IR_THRESHOLD) {
+      dxl_wb.goalVelocity(DXL_ID_1, 0); // 左に曲がる
+      dxl_wb.goalVelocity(DXL_ID_2, 100);
+    }
+  } else {
+    dxl_wb.goalVelocity(DXL_ID_1, 100); // 右に曲がる
+    dxl_wb.goalVelocity(DXL_ID_2, 0);
+    delay(duration);
+  }
+  
+  dxl_wb.goalVelocity(DXL_ID_1, 0); // 停止
+  dxl_wb.goalVelocity(DXL_ID_2, 0);
 
-  if (duration == 0) { // 曲がり始めるとき
-  dxl_wb.goalVelocity(DXL_ID_1, 0); // 左に曲がる
-  dxl_wb.goalVelocity(DXL_ID_2, 100);
-    return millis() - startTime;
-  } else { // 元に戻るとき
-    dxl_wb.goalVelocity(DXL_ID_1, 0); // 右に曲がる
+  return millis() - startTime;
+}
+
+// turnRight: 右に曲がる関数
+unsigned long turnRight(bool reverse = false, unsigned long duration = 0) {
+  unsigned long startTime = millis();
+  
+  if (!reverse) {
+    while (myOLLO.read(4, IR_SENSOR) > IR_THRESHOLD) {
+      dxl_wb.goalVelocity(DXL_ID_1, -100); // 右に曲がる
+      dxl_wb.goalVelocity(DXL_ID_2, 0);
+    }
+  } else {
+    dxl_wb.goalVelocity(DXL_ID_1, 0); // 左に曲がる
     dxl_wb.goalVelocity(DXL_ID_2, 100);
     delay(duration);
-    return 0;
   }
+  
+  dxl_wb.goalVelocity(DXL_ID_1, 0); // 停止
+  dxl_wb.goalVelocity(DXL_ID_2, 0);
+
+  return millis() - startTime;
 }
 
-unsigned long turnRight(unsigned long duration = 0) {
-  unsigned long startTime = millis();
-
-  if (duration == 0) { // 曲がり始めるとき
-    dxl_wb.goalVelocity(DXL_ID_1, -100); // 右に曲がる
-    dxl_wb.goalVelocity(DXL_ID_2, 0);
-    return millis() - startTime;
-  } else { // 元に戻るとき
-    dxl_wb.goalVelocity(DXL_ID_1, 100); // 左に曲がる
-    dxl_wb.goalVelocity(DXL_ID_2, 0);
-    delay(duration);
-    return 0;
-  }
-}
-
+// turnAndReturn: 回転して元に戻る関数
 void turnAndReturn(String direction) {
   unsigned long turnTime;
+  
   if (direction == "left") {
     turnTime = turnLeft();
     delay(2000); // 2秒間まっすぐ進む
-    turnRight(turnTime);
+    turnRight(true, turnTime); // 同じ時間だけ逆方向に回転
   } else {
     turnTime = turnRight();
     delay(2000); // 2秒間まっすぐ進む
-    turnLeft(turnTime);
+    turnLeft(true, turnTime); // 同じ時間だけ逆方向に回転
   }
   moveForward();
 }
+
 
 void moveForward() {
   dxl_wb.goalVelocity(DXL_ID_1, -200);
