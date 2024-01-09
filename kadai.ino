@@ -110,9 +110,6 @@ unsigned long turnLeft(bool reverse = false, unsigned long duration = 0) {
     dxl_wb.goalVelocity(DXL_ID_2, 0);
     delay(duration);
   }
-  
-  dxl_wb.goalVelocity(DXL_ID_1, 0); // 停止
-  dxl_wb.goalVelocity(DXL_ID_2, 0);
 
   return millis() - startTime;
 }
@@ -131,10 +128,6 @@ unsigned long turnRight(bool reverse = false, unsigned long duration = 0) {
     dxl_wb.goalVelocity(DXL_ID_2, 100);
     delay(duration);
   }
-  
-  dxl_wb.goalVelocity(DXL_ID_1, 0); // 停止
-  dxl_wb.goalVelocity(DXL_ID_2, 0);
-
   return millis() - startTime;
 }
 
